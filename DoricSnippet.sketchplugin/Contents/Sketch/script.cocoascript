@@ -1,0 +1,220 @@
+// Commands
+var commandExportColorPalette = function(context) {
+    var code = exportColorPalette(context);
+    context.document.showMessage('Generate code. Copied in paste board.');
+    copyToPasteBoard(code);
+}
+
+var commandExportSemanticPalette = function(context) {
+    var code = exportSemanticPalette(context);
+    context.document.showMessage('Generate code. Copied in paste board.');
+    copyToPasteBoard(code);
+}
+
+var commandExportGradient = function(context) {
+    var code = exportGradient(context);
+    context.document.showMessage('Generate code. Copied in paste board.');
+    copyToPasteBoard(code);
+}
+
+var commandExportTypographyTextStyle = function(context) {
+    var code = exportTypographyTextStyle(context);
+    context.document.showMessage('Generate code. Copied in paste board.');
+    copyToPasteBoard(code);
+}
+
+// Support methods
+
+function copyToPasteBoard(text) {
+    var pasteBoard = [NSPasteboard generalPasteboard];
+  [pasteBoard declareTypes: [NSArray arrayWithObject: NSPasteboardTypeString] owner: nil];
+  [pasteBoard setString: text forType: NSPasteboardTypeString];
+}
+
+function createColorVariable(propertyName, color) {
+    return 'public static let ' + propertyName + '  = UIColor' + '(' + 'red: ' + Math.round((color.red()) * 255) + '/255' + ', ' +
+        'green: ' + Math.round((color.green()) * 255) + '/255' + ', ' + 'blue: ' + Math.round((color.blue()) * 255) + '/255' + ', ' + 'alpha: ' + color.alpha() + ')';
+}
+
+function createColorInstanceVariable(propertyName, color) {
+    return 'public let ' + propertyName + '  = UIColor' + '(' + 'red: ' + Math.round((color.red()) * 255) + '/255' + ', ' +
+        'green: ' + Math.round((color.green()) * 255) + '/255' + ', ' + 'blue: ' + Math.round((color.blue()) * 255) + '/255' + ', ' + 'alpha: ' + color.alpha() + ')';
+}
+
+function formatVariableName(inputString) {
+    return inputString.replace(/[^a-z0-9]/ig, '');
+}
+
+function formatInstanceVariableName(inputString) {
+    return makeFirstCharLowerCase(formatVariableName(inputString));
+}
+
+function makeFirstCharLowerCase(s) {
+    return s[0].toLowerCase() + s.slice(1);
+}
+
+function createColorSetForLayers(selectedLayers) {
+    var colorSetString = []
+
+    for (var i = 0; i < selectedLayers.count(); i++) {
+        var layer = selectedLayers[i]
+        var fills = layer.style().fills()
+        var varName = formatVariableName(layer.name());
+        for (var j = 0; j < fills.count(); j++) {
+            var fill = fills[j];
+            if (fill.fillType() === 0) {
+                colorSetString.push(createColorVariable(varName, fill.color()));
+            }
+        }
+    }
+    return colorSetString
+}
+
+function createSemanaticDeclarion(variableName, generateTypeName, layers) {
+
+    var snippetString = [];
+    snippetString.push('public struct ' + generateTypeName + ' : ColorPalette {');
+    snippetString.push(createColorSetForLayers(layers).join('\n'));
+    snippetString.push('}');
+    var declarationOfColor = 'public static let ' + variableName + ': ColorPalette.Type = ' + generateTypeName + '.self'
+    snippetString.push('' + declarationOfColor);
+    snippetString.push('\n');
+    return snippetString;
+}
+
+// Export methods
+function exportColorPalette(context) {
+    var selection = context.selection
+    var snippetString = [];
+    var layers = [];
+    var generateTypeName = 'SketchColorPalette';
+
+    if (selection.count() == 0) {
+        return ""
+    }
+
+    if (selection[0].isKindOfClass(MSLayerGroup)) {
+        if (selection.count() > 1) {
+            for (var i = 0; i < selection.count(); i++) {
+                generateTypeName = formatVariableName(selection[i].name());
+                layers = selection[i].layers();
+
+                snippetString.push('public struct ' + generateTypeName + ' : ColorPalette {');
+                snippetString.push(createColorSetForLayers(layers)
+                    .join('\n'));
+                snippetString.push('}');
+            }
+            return snippetString.join('\n');
+        } else {
+            generateTypeName = formatVariableName(selection[0].name());
+            layers = selection[0].layers();
+        }
+    } else {
+        layers = selection;
+    }
+
+    snippetString.push('public struct ' + generateTypeName + ' : ColorPalette {');
+    snippetString.push(createColorSetForLayers(layers)
+        .join('\n'));
+    snippetString.push('}');
+    return snippetString.join('\n');
+}
+
+function exportSemanticPalette(context) {
+    var selection = context.selection
+    var snippetString = [];
+    var generateTypeName = 'SketchSemanticColorPalette';
+    var layers = [];
+
+    if (selection[0].isKindOfClass(MSLayerGroup)) {
+        if (selection.count() > 1) {
+            snippetString.push('public struct ' + generateTypeName + ' : SemanticColorPalette {');
+            for (var i = 0; i < selection.count(); i++) {
+                generateTypeName = formatVariableName(selection[i].name());
+                layers = selection[i].layers();
+                if (generateTypeName === 'ErrorColor') {
+                    snippetString.push(createSemanaticDeclarion('error', generateTypeName, layers).join('\n'));
+                } else if (generateTypeName === 'SuccessColor') {
+                    snippetString.push(createSemanaticDeclarion('success', generateTypeName, layers).join('\n'));
+                } else if (generateTypeName === 'InformationColor') {
+                    snippetString.push(createSemanaticDeclarion('info', generateTypeName, layers).join('\n'));
+                } else if (generateTypeName === 'WarningColor') {
+                    snippetString.push(createSemanaticDeclarion('warning', generateTypeName, layers).join('\n'));
+                }
+            }
+            snippetString.push('}');
+            return snippetString.join('\n');
+        } else {
+            generateTypeName = formatVariableName(selection[0].name());
+            layers = selection[0].layers();
+        }
+    } else {
+        layers = selection;
+    }
+
+    console.log(generateTypeName);
+    snippetString.push('public struct ' + generateTypeName + ' : ColorPalette {');
+    snippetString.push(createColorSetForLayers(layers)
+        .join('\n'));
+    snippetString.push('}');
+    return snippetString.join('\n');
+}
+
+function exportGradient(context) {
+    var selection = context.selection
+    var snippetString = [];
+
+    for (var i = 0; i < selection.count(); i++) {
+        var layer = selection[i];
+        var fills = layer.style().fills();
+        var varName = formatVariableName(layer.name());
+
+        for (var j = 0; j < fills.count(); j++) {
+            var fill = fills[j];
+            var color = fill.color();
+            snippetString.push('\n public struct ' + varName + ' : GradientColor { \n');
+            var startPoint = fill.gradient().from();
+            var endPoint = fill.gradient().to();
+            snippetString.push('public let startPoint: CGPoint = CGPoint(x: ' + startPoint.x + ', y: ' + startPoint.y + ')');
+            snippetString.push('public let endPoint: CGPoint = CGPoint(x: ' + endPoint.x + ', y: ' + endPoint.y + ')');
+            var stops1 = fill.gradient().stops()[0].color();
+            var stops2 = fill.gradient().stops()[1].color();
+            snippetString.push(createColorInstanceVariable('startColor', stops1));
+            snippetString.push(createColorInstanceVariable('endColor', stops2));
+            snippetString.push('\n}');
+        }
+    }
+    return snippetString.join('\n');
+}
+
+function exportTypographyTextStyle(context) {
+
+    var selection = context.selection;
+    var snippetString = [];
+    var fontCollection = [];
+    var mappingItems = [];
+
+    snippetString.push('\n public struct SketchTypography {');
+    fontCollection.push('\n class SketchFont: NSObject, Font {');
+    fontCollection.push('\n let fonts: [SketchTypography.SketchTextStyle: FontConvertible] = [');
+
+    // Starts enum
+    snippetString.push('enum SketchTextStyle: String {');
+    for (var i = 0; i < selection.count(); i++) {
+        var layer = selection[i]
+        var fills = layer.style().fills()
+        var varName = formatInstanceVariableName(layer.name());
+        snippetString.push('case ' + varName);
+        var fontSize = layer.fontSize();
+        var fontFamily = layer.fontPostscriptName();
+        mappingItems.push('.' + varName + ' : ' + 'FontDescription(name:"' + fontFamily + '" , size:' + fontSize + ')');
+    }
+
+    // Ends enum
+    snippetString.push('}');
+    snippetString.push('}');
+    fontCollection.push(mappingItems.join(',\n'));
+    fontCollection.push(']\n}');
+    snippetString.push(fontCollection.join('\n'));
+    return snippetString.join('\n');
+}

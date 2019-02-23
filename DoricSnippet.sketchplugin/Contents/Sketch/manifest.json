@@ -1,0 +1,48 @@
+{
+  "identifier": "com.jayk.sketchplugin.doricsnippet",
+  "version": "1.0",
+  "name": "Doric Snippet",
+  "description": "Plugin which generates Swift code snippets for Doric.",
+  "homepage": "https://github.com/jayeshk/Doric",
+  "authorEmail": "mobilejay5@gmail.com",
+  "author": "Jay K.",
+  "menu": {
+    "items": [
+      "export-color-palette",
+      "export-color-semantic",
+      "export-color-gradient",
+      "export-typography-textstyle"
+    ],
+    "title": "Doric Snippets"
+  },
+  "commands": [
+    {
+      "script": "script.cocoascript",
+      "handler": "commandExportColorPalette",
+      "shortcut": "",
+      "name": "Color Palette",
+      "identifier": "export-color-palette"
+    },
+    {
+      "script": "script.cocoascript",
+      "handler": "commandExportSemanticPalette",
+      "shortcut": "",
+      "name": "Semantic Color Palette",
+      "identifier": "export-color-semantic"
+    },
+    {
+      "script": "script.cocoascript",
+      "handler": "commandExportGradient",
+      "shortcut": "",
+      "name": "Gradient Color",
+      "identifier": "export-color-gradient"
+    },
+    {
+      "script": "script.cocoascript",
+      "handler": "commandExportTypographyTextStyle",
+      "shortcut": "",
+      "name": "Typography",
+      "identifier": "export-typography-textstyle"
+    }
+  ]
+}
